@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Dashboard: Phase 4 - Ongoing Management</title>
+    <!-- Chosen Palette: Dark Theme - Deep Charcoals & Greys with Distinct Dark Gold & Sophisticated Violet Accents -->
+    <!-- Application Structure Plan: A four-column, Kanban-style dashboard representing the main sections of Phase 4 (Performance, Strategy, Planning, Admin). This structure visually organizes the cyclical and thematic nature of this phase. Clicking a task card opens a detailed modal, keeping the main UI clean. An interactive progress bar tracks overall completion. -->
+    <!-- Visualization & Content Choices: Report Info: Phase 4 workflow. Goal: Organize/Inform. Viz/Presentation: Kanban Board (HTML/CSS), Progress Bar (HTML/CSS/JS), Modal Pop-ups (JS). Interaction: Click cards to view details, check tasks as complete to update progress. Justification: This dashboard structure is ideal for managing ongoing, thematic tasks, offering a clear overview and interactive detail-on-demand. Library/Method: Vanilla JS, Tailwind CSS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for Play/Pause icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Deep charcoal background */
+            color: #e2e8f0; /* Light text for general content */
+        }
+        .kanban-column {
+            background-color: #2d3748; /* Darker gray for columns */
+            border: 1px solid #4a5568; /* Subtle border */
+        }
+        .task-card {
+            background-color: #4a5568; /* Even darker gray for task cards */
+            border-left: 5px solid #64748b; /* Subtle grey border */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .task-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        .task-card.completed {
+             border-left-color: #4ade80; /* Green border for completed */
+             opacity: 0.7;
+        }
+        .task-card.completed .task-title {
+            text-decoration: line-through;
+            color: #a0aec0; /* Lighter grey for completed text */
+        }
+        .modal-overlay {
+            background-color: rgba(15, 23, 42, 0.85); /* Darker, more opaque overlay */
+            backdrop-filter: blur(6px); /* More blur */
+        }
+        .modal-content {
+            background-color: #2d3748; /* Darker modal background */
+            color: #e2e8f0; /* Light text in modal */
+            border: 1px solid #4a5568; /* Modal border */
+        }
+        .modal-close-btn {
+            color: #cbd5e0; /* Light grey close button */
+        }
+        .modal-close-btn:hover {
+            background-color: #4a5568; /* Darker hover for close button */
+        }
+        .modal-footer {
+            background-color: #1a202c; /* Even darker footer */
+            border-top: 1px solid #4a5568; /* Footer border */
+        }
+        .progress-bar-bg {
+            background-color: #4a5568; /* Darker background for progress bar */
+        }
+        .progress-bar-fill {
+            background: linear-gradient(to right, #9370DB, #FFD700); /* Lilac to Gold */
+            transition: width 0.5s ease-in-out;
+        }
+        /* Styles for the custom audio player container (adapted for this theme) */
+        .audio-player-container {
+            background-color: rgba(147, 112, 219, 0.08); /* Transparent violet-ish */
+            border: 2px solid #9370DB; /* Violet border */
+        }
+        .custom-audio-player {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            border-radius: 0.5rem;
+            background-color: rgba(147, 112, 219, 0.15); /* More transparent violet for inner player */
+        }
+        .play-pause-btn {
+            background-color: #FFD700; /* Gold button */
+            color: #1a202c; /* Dark text for button */
+            padding: 0.75rem 1rem;
+            border-radius: 9999px; /* Fully rounded */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .play-pause-btn:hover {
+            background-color: #fdd835; /* Slightly darker gold on hover */
+        }
+        .progress-bar-container {
+            flex-grow: 1;
+            height: 8px;
+            background-color: rgba(255, 255, 255, 0.2); /* Light transparent background for track */
+            border-radius: 4px;
+            margin: 0 1rem;
+            cursor: pointer;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background-color: #FFD700; /* Gold progress fill */
+            border-radius: 4px;
+        }
+        .time-display {
+            color: #e2e8f0; /* Light text for time numbers */
+            font-size: 0.9rem;
+            min-width: 60px; /* Ensure space for numbers */
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8">
+
+    <div class="max-w-screen-2xl mx-auto">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl md:text-5xl font-extrabold text-gray-50">Phase 4: Ongoing Management & Next Episode Preparation</h1>
+            <p class="mt-3 text-lg text-gray-300">The continuous cycle of analysis, strategy, and planning for the Live One Day Project.</p>
+        </header>
+
+        <!-- Overall Progress Section -->
+        <div class="mb-8 p-6 bg-gray-800 rounded-xl shadow-md">
+            <h2 class="text-xl font-bold text-gray-100 mb-3">Overall Phase Progress</h2>
+            <div class="progress-bar-bg w-full h-4 rounded-full overflow-hidden">
+                <div id="overall-progress-bar" class="progress-bar-fill h-full" style="width: 0%;"></div>
+            </div>
+            <p id="progress-text" class="text-right text-gray-400 mt-2 text-sm font-medium">0 / 13 tasks completed</p>
+        </div>
+
+        <!-- Audio Player Section -->
+        <div class="audio-player-container p-4 mb-8 rounded-xl w-full md:w-3/4 lg:w-1/2 mx-auto">
+            <h3 class="text-xl font-semibold text-gray-100 mb-3">Phase 4 Audio Overview</h3>
+            <div class="custom-audio-player">
+                <audio id="audioPlayer" src="P4audio.mp3" preload="auto"></audio>
+                
+                <button id="playPauseBtn" class="play-pause-btn">
+                    <i id="playPauseIcon" class="fas fa-play"></i>
+                </button>
+
+                <span id="currentTime" class="time-display">0:00</span>
+                
+                <div id="progressBarContainer" class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                
+                <span id="duration" class="time-display">0:00</span>
+            </div>
+            <p class="text-sm text-gray-400 mt-2">Listen to a summary of this phase's objectives and tasks.</p>
+        </div>
+        <!-- End Audio Player Section -->
+
+        <!-- Kanban Board -->
+        <main id="kanban-board" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+            <!-- Columns will be generated by JS -->
+        </main>
+    </div>
+
+    <!-- Modal Structure -->
+    <div id="task-modal" class="fixed inset-0 z-50 modal-overlay items-center justify-center hidden">
+        <div class="modal-content rounded-lg shadow-2xl w-11/12 md:w-3/4 lg:w-1/2 max-w-4xl m-8 overflow-hidden transform transition-all">
+            <div class="p-6 md:p-8">
+                <div class="flex justify-between items-start">
+                    <h2 id="modal-title" class="text-2xl md:text-3xl font-bold text-gray-50"></h2>
+                    <button id="modal-close-btn" class="p-2 -mr-2 -mt-2 rounded-full modal-close-btn hover:bg-gray-700 transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                <div class="mt-6 border-t border-gray-700 pt-6">
+                    <div>
+                        <h3 class="font-bold text-lg text-[#9370DB] mb-2">🎯 Activity</h3>
+                        <p id="modal-activity" class="text-gray-300 leading-relaxed"></p>
+                    </div>
+                    <div class="mt-6">
+                        <h3 class="font-bold text-lg text-[#FFD700] mb-2">📦 Deliverable</h3>
+                        <p id="modal-deliverable" class="text-gray-300 leading-relaxed"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer px-6 md:px-8 py-4">
+                <label class="flex items-center cursor-pointer">
+                    <input type="checkbox" id="modal-complete-checkbox" class="h-5 w-5 rounded border-gray-600 text-[#9370DB] focus:ring-[#9370DB]"/>
+                    <span class="ml-3 text-gray-200 font-medium">Mark as Completed</span>
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const tasksData = [
+                // Section 1: Performance Analysis & Reporting
+                { id: '4.1', title: 'Data Collection', status: 'todo', section: 'Performance Analysis & Reporting', activity: 'Collect comprehensive performance data from all distribution platforms (e.g., YouTube Analytics, social media insights, website traffic). This includes views, watch time, audience retention, demographics, engagement metrics (likes, comments, shares), and subscriber growth.', deliverable: 'Consolidated raw performance data from all sources, organized for analysis.' },
+                { id: '4.2', title: 'Performance Reporting', status: 'todo', section: 'Performance Analysis & Reporting', activity: 'Analyze the collected data to identify trends, key successes, and areas for improvement. Generate internal performance reports summarizing episode reach, audience engagement, and overall impact.', deliverable: 'Internal performance report for Episode 1 (and subsequent episodes), highlighting key metrics and insights.' },
+                { id: '4.3', title: 'Sponsor Reporting', status: 'todo', section: 'Performance Analysis & Reporting', activity: 'Compile specific data and insights relevant to each sponsor\'s integrated content. Prepare customized reports demonstrating the value and reach of their placements within the episode.', deliverable: 'Individualized sponsor performance reports, fulfilling contractual obligations and supporting future partnerships.' },
+                // Section 2: Strategy Refinement
+                { id: '4.4', title: 'Content Strategy Review', status: 'todo', section: 'Strategy Refinement', activity: 'Based on performance data and audience feedback, review and refine the creative direction, storytelling techniques, and thematic focus for upcoming episodes. This includes evaluating participant selection criteria and immersion types.', deliverable: 'Updated content strategy document, outlining adjustments for future episodes.' },
+                { id: '4.5', title: 'Distribution Strategy Optimization', status: 'todo', section: 'Strategy Refinement', activity: 'Analyze platform-specific performance and audience behavior to optimize upload schedules, promotional tactics, and cross-platform synergy. Explore new distribution channels if beneficial.', deliverable: 'Revised distribution plan, including platform-specific best practices and promotional calendars.' },
+                { id: '4.6', title: 'Monetization Strategy Adjustment', status: 'todo', section: 'Strategy Refinement', activity: 'Review current revenue streams (e.g., ad revenue, sponsorships, merchandise) and explore new opportunities. Adjust pricing models or partnership strategies based on market conditions and project growth.', deliverable: 'Updated monetization strategy, including new potential revenue models or adjustments to existing ones.' },
+                // Section 3: Future Episode Planning
+                { id: '4.7', title: 'Next Episode Brainstorming', status: 'todo', section: 'Future Episode Planning', activity: 'Conduct creative sessions to generate ideas for future episode themes, locations, and unique cultural experiences, aligning with the refined content strategy.', deliverable: 'A prioritized list of potential episode concepts and themes.' },
+                { id: '4.8', title: 'Location Scouting', status: 'todo', section: 'Future Episode Planning', activity: 'Research and identify specific countries, regions, or communities that offer authentic and visually compelling settings for the selected episode themes. Initial contact and feasibility checks may be included.', deliverable: 'Shortlist of potential filming locations with preliminary feasibility assessments.' },
+                { id: '4.9', title: 'Participant/Host Identification', status: 'todo', section: 'Future Episode Planning', activity: 'Begin the process of identifying and vetting potential participants and immersion host families who embody the spirit of the project and can offer unique perspectives.', deliverable: 'Database of potential participants and host families, with initial contact logs.' },
+                { id: '4.10', title: 'Initial Logistics Planning', status: 'todo', section: 'Future Episode Planning', activity: 'Develop high-level logistical plans for the next episode, including estimated travel timelines, equipment needs, and preliminary budget considerations.', deliverable: 'Preliminary logistical plan and budget outline for the next episode.' },
+                // Section 4: Project Management & Administration
+                { id: '4.11', title: 'Financial Management', status: 'todo', section: 'Project Management & Administration', activity: 'Ongoing budget monitoring, expense tracking, invoice management, and financial reporting. This includes managing sponsor payments and exploring additional funding opportunities.', deliverable: 'Up-to-date financial records, budget vs. actual reports, and cash flow projections.' },
+                { id: '4.12', title: 'Team Management & Development', status: 'todo', section: 'Project Management & Administration', activity: 'Regular team meetings, performance reviews, professional development opportunities, and conflict resolution. This ensures the core team remains motivated and effective.', deliverable: 'Documented team meeting minutes, performance feedback, and professional development plans.' },
+                { id: '4.13', title: 'Ongoing Legal & Compliance', status: 'todo', section: 'Project Management & Administration', activity: 'Continuous review of contracts (participant, host, sponsor), intellectual property rights, and any new legal requirements related to international filming or online content distribution.', deliverable: 'Up-to-date legal documentation, compliance checks, and risk assessments.' }
+            ];
+
+            const sections = [
+                { title: 'Performance Analysis & Reporting 📊', description: 'Understanding episode impact through data.' },
+                { title: 'Strategy Refinement 🔄', description: 'Adapting our approach for future success.' },
+                { title: 'Future Episode Planning 🗺️', description: 'Laying the groundwork for the next journey.' },
+                { title: 'Project Management & Administration ⚙️', description: 'Ensuring smooth and compliant operations.' }
+            ];
+
+            const kanbanBoard = document.getElementById('kanban-board');
+            const modal = document.getElementById('task-modal');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+            const modalTitle = document.getElementById('modal-title');
+            const modalActivity = document.getElementById('modal-activity');
+            const modalDeliverable = document.getElementById('modal-deliverable');
+            const modalCheckbox = document.getElementById('modal-complete-checkbox');
+
+            let currentTaskId = null;
+
+            function renderBoard() {
+                kanbanBoard.innerHTML = '';
+                sections.forEach(section => {
+                    const column = document.createElement('div');
+                    column.className = 'kanban-column rounded-xl p-4 flex flex-col';
+                    column.innerHTML = `
+                        <div class="mb-4">
+                           <h2 class="text-xl font-bold text-gray-50">${section.title}</h2>
+                           <p class="text-sm text-gray-400">${section.description}</p>
+                        </div>
+                        <div class="task-list flex-grow space-y-4"></div>
+                    `;
+                    const taskList = column.querySelector('.task-list');
+                    // Correctly filter tasks for the current section
+                    const sectionTasks = tasksData.filter(task => task.section === section.title.split(' ')[0] + ' ' + section.title.split(' ')[1] || task.section === section.title.split(' ')[0]);
+                    sectionTasks.forEach(task => {
+                        const card = document.createElement('div');
+                        card.className = 'task-card p-4 rounded-lg shadow-sm cursor-pointer';
+                        card.dataset.id = task.id;
+                        if(task.status === 'done') {
+                            card.classList.add('completed');
+                        }
+                        card.innerHTML = `
+                            <p class="task-title font-bold text-gray-50">${task.id}: ${task.title}</p>
+                            <p class="text-xs text-gray-400 mt-1">${task.section}</p>
+                        `;
+                        card.addEventListener('click', () => openModal(task.id));
+                        taskList.appendChild(card);
+                    });
+                    kanbanBoard.appendChild(column);
+                });
+                updateProgress();
+            }
+            
+            // Correct the task filtering logic
+            function renderBoardV2() {
+                kanbanBoard.innerHTML = '';
+                sections.forEach(section => {
+                    const column = document.createElement('div');
+                    column.className = 'kanban-column rounded-xl p-4 flex flex-col';
+                    column.innerHTML = `
+                        <div class="mb-4">
+                           <h2 class="text-xl font-bold text-gray-50">${section.title}</h2>
+                           <p class="text-sm text-gray-400">${section.description}</p>
+                        </div>
+                        <div class="task-list flex-grow space-y-4"></div>
+                    `;
+                    const taskList = column.querySelector('.task-list');
+                    
+                    const sectionTitleKey = section.title.split(' ')[0] + ' ' + section.title.split(' ')[1] + ' ' + section.title.split(' ')[2] + ' ' + section.title.split(' ')[3];
+                    const sectionTasks = tasksData.filter(task => task.section === section.title.replace(/ \📊| \🔄| \🗺️| \⚙️/g, ''));
+
+                    sectionTasks.forEach(task => {
+                        const card = document.createElement('div');
+                        card.className = 'task-card p-4 rounded-lg shadow-sm cursor-pointer';
+                        card.dataset.id = task.id;
+                        if(task.status === 'done') {
+                            card.classList.add('completed');
+                        }
+                        card.innerHTML = `
+                            <p class="task-title font-bold text-gray-50">${task.id}: ${task.title}</p>
+                            <p class="text-xs text-gray-400 mt-1">${task.section}</p>
+                        `;
+                        card.addEventListener('click', () => openModal(task.id));
+                        taskList.appendChild(card);
+                    });
+                    kanbanBoard.appendChild(column);
+                });
+                updateProgress();
+            }
+
+
+            function openModal(taskId) {
+                currentTaskId = taskId;
+                const task = tasksData.find(t => t.id === taskId);
+                if (task) {
+                    modalTitle.textContent = `${task.id}: ${task.title}`;
+                    modalActivity.textContent = task.activity;
+                    modalDeliverable.textContent = task.deliverable;
+                    modalCheckbox.checked = task.status === 'done';
+                    modal.classList.remove('hidden');
+                    modal.classList.add('flex');
+                }
+            }
+
+            function closeModal() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                currentTaskId = null;
+            }
+
+            function updateProgress() {
+                const completedTasks = tasksData.filter(t => t.status === 'done').length;
+                const totalTasks = tasksData.length;
+                const percentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
+                
+                document.getElementById('overall-progress-bar').style.width = `${percentage}%`;
+                document.getElementById('progress-text').textContent = `${completedTasks} / ${totalTasks} tasks completed`;
+            }
+
+            modalCloseBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+
+            modalCheckbox.addEventListener('change', () => {
+                if (currentTaskId) {
+                    const task = tasksData.find(t => t.id === currentTaskId);
+                    if (task) {
+                        task.status = modalCheckbox.checked ? 'done' : 'todo';
+                        renderBoardV2();
+                    }
+                }
+            });
+
+            renderBoardV2();
+
+
+            // Custom Audio Player Logic (from phase-2-dashboard-html, adapted for this theme)
+            const audioPlayer = document.getElementById('audioPlayer');
+            const playPauseBtn = document.getElementById('playPauseBtn');
+            const playPauseIcon = document.getElementById('playPauseIcon');
+            const progressBar = document.getElementById('progressBar');
+            const progressBarContainer = document.getElementById('progressBarContainer');
+            const currentTimeSpan = document.getElementById('currentTime');
+            const durationSpan = document.getElementById('duration');
+
+            function formatTime(seconds) {
+                const minutes = Math.floor(seconds / 60);
+                const remainingSeconds = Math.floor(seconds % 60);
+                return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+            }
+
+            audioPlayer.addEventListener('loadedmetadata', () => {
+                durationSpan.textContent = formatTime(audioPlayer.duration);
+                currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
+            });
+
+            playPauseBtn.addEventListener('click', () => {
+                if (audioPlayer.paused) {
+                    audioPlayer.play();
+                    playPauseIcon.classList.remove('fa-play');
+                    playPauseIcon.classList.add('fa-pause');
+                } else {
+                    audioPlayer.pause();
+                    playPauseIcon.classList.remove('fa-pause');
+                    playPauseIcon.classList.add('fa-play');
+                }
+            });
+
+            audioPlayer.addEventListener('timeupdate', () => {
+                const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progressBar.style.width = `${progress}%`;
+                currentTimeSpan.textContent = formatTime(audioPlayer.currentTime);
+            });
+
+            progressBarContainer.addEventListener('click', (e) => {
+                const clickX = e.offsetX;
+                const containerWidth = progressBarContainer.offsetWidth;
+                const seekTime = (clickX / containerWidth) * audioPlayer.duration;
+                audioPlayer.currentTime = seekTime;
+            });
+
+            audioPlayer.addEventListener('ended', () => {
+                playPauseIcon.classList.remove('fa-pause');
+                playPauseIcon.classList.add('fa-play');
+                audioPlayer.currentTime = 0;
+                progressBar.style.width = '0%';
+                currentTimeSpan.textContent = '0:00';
+            });
+        });
+    </script>
+</body>
+</html>
